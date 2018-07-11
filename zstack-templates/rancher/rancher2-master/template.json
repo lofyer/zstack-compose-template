@@ -1,0 +1,77 @@
+{
+  "ZStackTemplateFormatVersion": "2018-06-18",
+  "Description": "创建Rancher 2.0管理节点\n本示例将创建一个Rancher管理节点\n环境能够访问外网，计算规格，网络。请确保网络与镜像（需要支持Cloudinit）的正确性，否则示例可能会失败。\n建议使用CentOS官方镜像，https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2，并修改为加速repo。",
+  "Parameters": {
+    "imageUuid": {
+      "Type": "String",
+      "Label": "基础镜像",
+      "DefaultValue": ""
+    },
+    "osuser": {
+      "Type": "String",
+      "Label": "系统用户名",
+      "Description": "创建操作系统非root用户"
+    },
+    "cdn": {
+      "Type": "String",
+      "Label": "Docker镜像加速地址",
+      "Description": "Docker镜像加速地址以加速部署，比如阿里云，默认不加速"
+    },
+    "instanceOfferingUuid": {
+      "Type": "String",
+      "Label": "计算规格",
+      "Description": "创建云主机使用的计算规格"
+    },
+    "l3NetworkUuid": {
+      "Type": "String",
+      "Label": "网络",
+      "Description": "本网络用来创建云主机，请确保网络支持Userdata 服务,且能够访问外网"
+    }
+  },
+  "Resources": {
+    "MysqlMaster": {
+      "Type": "ZStack::Resource::VmInstance",
+      "Properties": {
+        "name": "Rancher-2.x-Master",
+        "imageUuid": {
+          "Ref": "imageUuid"
+        },
+        "instanceOfferingUuid": {
+          "Ref": "instanceOfferingUuid"
+        },
+        "l3NetworkUuids": [{
+          "Ref": "l3NetworkUuid"
+        }],
+        "systemTags": [{
+          "Fn::Join": ["::", ["userdata", {
+            "Fn::Join": ["", ["#cloud-config\n",
+              "users:\n",
+              " - name: ",{"Ref": "osuser"},"\n",
+              "   shell: /bin/bash\n",
+              "   groups: users\n",
+              "   sudo: ['ALL=(ALL) NOPASSWD:ALL']\n",
+              "   ssh-authorized-keys:\n",
+              "    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+PmqBvrEdUgN/275alDnmFMC5R9ctsIbED+SsEAu6SQQX8VtzNMa1104hZ3BjDpP16SMvo1PVGcHma4MgTDfcNdyiQ3S3j87LtFxRr7UoMxhwy3RgaFzgI3ZVSvTu3XC1xqmkH2Ur69mQta1B3RpwdSX0mSUs5uK65DP7mvJDkCVfLX5hZmt8xuWNrnAvgh+xbBSTvG35OycBk+FiU8HnXnwuVkpxKjfwdSiySZL8SxRrApe5HRO/JyUzgBUn54b+mjoOM+R8GZ1bKNEHNrXTqVzABfR2Ocj0gOJAqZYJi2aTwP3N91yiiucpuxYqu6tYLRCOmi8Cl2TmXA4e5Ejp lofyer@lofyerdeMacBook-Pro.local\n",
+              "\n",
+              "write_files:\n",
+              " - path: /tmp/install.sh\n",
+              "   content: |\n",
+              "    iptables -F\n",
+              "    cd /tmp\n",
+              "    yum --disablerepo=* localinstall -y https://mirrors.aliyun.com/docker-ce/linux/centos/7/x86_64/stable/Packages/docker-ce-selinux-17.03.2.ce-1.el7.centos.noarch.rpm\n",
+              "    yum --disablerepo=* localinstall -y https://mirrors.aliyun.com/docker-ce/linux/centos/7/x86_64/stable/Packages/docker-ce-17.03.2.ce-1.el7.centos.x86_64.rpm\n",
+              "    curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s ", {"Ref": "cdn"},"\n",
+              "    systemctl daemon-reload; systemctl enable docker;systemctl restart docker\n",
+              "    docker run -d --restart=unless-stopped -p 80:80 -p 443:443 rancher/rancher\n",
+              "\n",
+              "runcmd:\n",
+              " - [ bash, /tmp/install.sh]\n",
+              "final_message:\n",
+              " The system is finally up, after $UPTIME seconds"
+            ]]
+          }]]
+        }]
+      }
+    }
+  }
+}

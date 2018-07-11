@@ -1,0 +1,192 @@
+{
+  "ZStackTemplateFormatVersion": "2018-06-18",
+  "Description": "创建Mysql 集群示例：\n本示例将创建一个Mysql 集群。创建示例前提环境：\n环境能够访问外网，计算规格，网络。请确保网络与镜像（需要支持Cloudinit）的正确性，否则示例可能会失败。\n建议使用CentOS官方镜像，https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2，并修改为加速repo。",
+  "Parameters": {
+    "imageUuid": {
+      "Type": "String",
+      "Label": "基础镜像",
+      "DefaultValue": ""
+    },
+    "osuser": {
+      "Type": "String",
+      "Label": "系统用户名",
+      "Description": "创建操作系统非root用户"
+    },
+    "dbuser": {
+      "Type": "String",
+      "Label": "MySQL数据库用户",
+      "Description": "创建MySQL数据库用户"
+    },
+    "dbuserpass": {
+      "Type": "String",
+      "Label": "MySQL数据库密码",
+      "Description": "MySQL数据库用户密码"
+    },
+    "instanceOfferingUuid": {
+      "Type": "String",
+      "Label": "计算规格",
+      "Description": "创建云主机使用的计算规格"
+    },
+    "l3NetworkUuid": {
+      "Type": "String",
+      "Label": "网络",
+      "Description": "本网络用来创建云主机，请确保网络支持Userdata 服务,且能够访问外网"
+    }
+  },
+  "Resources": {
+    "MysqlMaster": {
+      "Type": "ZStack::Resource::VmInstance",
+      "Properties": {
+        "name": "Mysql-Master",
+        "imageUuid": {
+          "Ref": "imageUuid"
+        },
+        "instanceOfferingUuid": {
+          "Ref": "instanceOfferingUuid"
+        },
+        "l3NetworkUuids": [{
+          "Ref": "l3NetworkUuid"
+        }],
+        "systemTags": [{
+          "Fn::Join": ["::", ["userdata", {
+            "Fn::Join": ["", ["#cloud-config\n",
+              "users:\n",
+              " - name: ",{"Ref": "osuser"},"\n",
+              "   shell: /bin/bash\n",
+              "   groups: users\n",
+              "   sudo: ['ALL=(ALL) NOPASSWD:ALL']\n",
+              "   ssh-authorized-keys:\n",
+              "    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+PmqBvrEdUgN/275alDnmFMC5R9ctsIbED+SsEAu6SQQX8VtzNMa1104hZ3BjDpP16SMvo1PVGcHma4MgTDfcNdyiQ3S3j87LtFxRr7UoMxhwy3RgaFzgI3ZVSvTu3XC1xqmkH2Ur69mQta1B3RpwdSX0mSUs5uK65DP7mvJDkCVfLX5hZmt8xuWNrnAvgh+xbBSTvG35OycBk+FiU8HnXnwuVkpxKjfwdSiySZL8SxRrApe5HRO/JyUzgBUn54b+mjoOM+R8GZ1bKNEHNrXTqVzABfR2Ocj0gOJAqZYJi2aTwP3N91yiiucpuxYqu6tYLRCOmi8Cl2TmXA4e5Ejp lofyer@lofyerdeMacBook-Pro.local\n",
+              "\n",
+              "packages:\n",
+              " - mariadb\n",
+              " - mariadb-server\n",
+              "\n",
+              "write_files:\n",
+              " - path: /etc/my.cnf\n",
+              "   content: |\n",
+              "    [mysqld]\n",
+              "    log-bin=mysql-bin\n",
+              "    server-id=111\n",
+              "    datadir=/var/lib/mysql\n",
+              "    socket=/var/lib/mysql/mysql.sock\n",
+              "    symbolic-links=0\n",
+              "\n",
+              "    [mysqld_safe]\n",
+              "    log-error=/var/log/mariadb/mariadb.log\n",
+              "    pid-file=/var/run/mariadb/mariadb.pid\n",
+              "    !includedir /etc/my.cnf.d\n",
+              " - path: /tmp/mysql-setting.sh\n",
+              "   content: |\n",
+              "    iptables -F\n",
+              "    service mariadb start\n",
+              "    mysql -uroot -e  \"GRANT REPLICATION SLAVE ON *.* to '", {"Ref":"dbuser"},"'@'%' identified by '", {"Ref":"dbuserpass"},"'\"\n",
+              "    mysql -uroot -e  \"GRANT SUPER ON *.* TO ",{"Ref":"dbuser"},"\"\n",
+              "runcmd:\n",
+              " - [ bash, /tmp/mysql-setting.sh]",
+              "final_message:\n",
+              " The system is finally up, after $UPTIME seconds"
+            ]]
+          }]]
+        }]
+      }
+    },
+    "MysqlSlave": {
+      "Type": "ZStack::Resource::VmInstance",
+      "Properties": {
+        "name": "Mysql-Slave",
+        "imageUuid": {
+          "Ref": "imageUuid"
+        },
+        "instanceOfferingUuid": {
+          "Ref": "instanceOfferingUuid"
+        },
+        "l3NetworkUuids": [{
+          "Ref": "l3NetworkUuid"
+        }],
+        "systemTags": [{
+          "Fn::Join": ["::", ["userdata", {
+            "Fn::Join": ["", ["#cloud-config\n",
+              "users:\n",
+              " - name: ",{"Ref": "osuser"},"\n",
+              "   shell: /bin/bash\n",
+              "   groups: users\n",
+              "   sudo: ['ALL=(ALL) NOPASSWD:ALL']\n",
+              "   ssh-authorized-keys:\n",
+              "    - ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+PmqBvrEdUgN/275alDnmFMC5R9ctsIbED+SsEAu6SQQX8VtzNMa1104hZ3BjDpP16SMvo1PVGcHma4MgTDfcNdyiQ3S3j87LtFxRr7UoMxhwy3RgaFzgI3ZVSvTu3XC1xqmkH2Ur69mQta1B3RpwdSX0mSUs5uK65DP7mvJDkCVfLX5hZmt8xuWNrnAvgh+xbBSTvG35OycBk+FiU8HnXnwuVkpxKjfwdSiySZL8SxRrApe5HRO/JyUzgBUn54b+mjoOM+R8GZ1bKNEHNrXTqVzABfR2Ocj0gOJAqZYJi2aTwP3N91yiiucpuxYqu6tYLRCOmi8Cl2TmXA4e5Ejp lofyer@lofyerdeMacBook-Pro.local\n",
+              "\n",
+              "packages:\n",
+              " - mariadb\n",
+              " - mariadb-server\n",
+              "\n",
+              "write_files:\n",
+              " - path: /etc/my.cnf\n",
+              "   content: |\n",
+              "    [mysqld]\n",
+              "    log-bin=mysql-bin\n",
+              "    server-id=222\n",
+              "    datadir=/var/lib/mysql\n",
+              "    socket=/var/lib/mysql/mysql.sock\n",
+              "    symbolic-links=0\n",
+              "\n",
+              "    [mysqld_safe]\n",
+              "    log-error=/var/log/mariadb/mariadb.log\n",
+              "    pid-file=/var/run/mariadb/mariadb.pid\n",
+              "    !includedir /etc/my.cnf.d\n",
+              " - path: /tmp/mysql-setting.sh\n",
+              "   content: |\n",
+              "    service mariadb start\n",
+              "    while true\n",
+              "    do\n",
+              "        mysql -u", {"Ref":"dbuser"}," -p", {"Ref":"dbuserpass"}," -h", {
+                "Fn::GetAtt": [{
+                  "Fn::Select": [0, {
+                    "Fn::GetAtt": ["MysqlMaster", "vmNics"]
+                  }]
+                }, "ip"]
+              }, " -e 'show master status'\n",
+              "        if [ $? -eq 0 ];then\n",
+              "            break\n",
+              "        fi\n",
+              "        sleep 30\n",
+              "    done\n",
+              "    sleep 30\n",
+              "    cmd=`mysql -u", {"Ref":"dbuser"}," -p", {"Ref":"dbuserpass"}," -h", {
+                "Fn::GetAtt": [{
+                  "Fn::Select": [0, {
+                    "Fn::GetAtt": ["MysqlMaster", "vmNics"]
+                  }]
+                }, "ip"]
+              }, " -e 'show master status'`\n",
+              "    logfile=`echo $cmd | awk '{print $5}'`\n",
+              "    pos=`echo $cmd | awk '{print $6}'`\n",
+              "    mysql -uroot -e  \"change master to master_host='", {
+                "Fn::GetAtt": [{
+                  "Fn::Select": [0, {
+                    "Fn::GetAtt": ["MysqlMaster", "vmNics"]
+                  }]
+                }, "ip"]
+              }, "',master_user='", {"Ref":"dbuser"},"',master_password='", {"Ref":"dbuserpass"},"',master_log_file='${logfile}',master_log_pos=${pos}\"\n",
+              "    mysql -uroot -e  \"start slave\"\n",
+              "runcmd:\n",
+              " - [ bash, -xe, /tmp/mysql-setting.sh]",
+              "final_message:\n",
+              " The system is finally up, after $UPTIME seconds"
+            ]]
+          }]]
+        }]
+      },
+      "DependsOn": {
+        "Ref": "MysqlMaster"
+      }
+    }
+  },
+  "Outputs": {
+    "VmInstance": {
+      "Description": "print vm instance",
+      "Value": {
+        "Ref": "MysqlSlave"
+      }
+    }
+  }
+}

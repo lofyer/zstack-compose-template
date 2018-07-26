@@ -1,6 +1,6 @@
 {
   "ZStackTemplateFormatVersion": "2018-06-18",
-  "Description": "创建Rancher 2.0管理节点\n本示例将创建一个Rancher管理节点\n环境能够访问外网，计算规格，网络。请确保网络与镜像（需要支持Cloudinit）的正确性，否则示例可能会失败。\n建议使用CentOS官方镜像，https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2，并修改为加速repo。",
+  "Description": "创建Rancher 2.0管理节点\n本示例将创建一个Rancher计算节点\n环境能够访问外网，计算规格，网络。请确保网络与镜像（需要支持Cloudinit）的正确性，否则示例可能会失败。\n建议使用CentOS官方镜像，https://cloud.centos.org/centos/7/images/CentOS-7-x86_64-GenericCloud.qcow2，并修改为加速repo。",
   "Parameters": {
     "imageUuid": {
       "Type": "String",
@@ -31,6 +31,12 @@
       "Description": "Docker镜像加速地址以加速部署，比如阿里云，默认不加速",
       "DefaultValue": "https://docker.mirrors.ustc.edu.cn/"
     },
+    "rancher-cmd": {
+      "Type": "String",
+      "Label": "添加Rancher节点命令",
+      "Description": "添加rancher节点的命令，注意是否需要controller以及etcd。",
+      "DefaultValue": "docker run -d --privileged --restart=unless-stopped --net=host -v /etc/kubernetes:/etc/kubernetes -v /var/run:/var/run rancher/rancher-agent:v2.0.6 --server https://172.20.13.182 --token 6zfz7frphwgslnghk4r9mvmdp4zkzg22685lm4kqsqwlwvphx5fs7t --ca-checksum a736bebb78761d1c2d16b8c277d239444fae7f0aefb4131ed8be1131d3c301ca --etcd --controlplane --worker"
+    },
     "instanceOfferingUuid": {
       "Type": "String",
       "Label": "计算规格",
@@ -51,7 +57,7 @@
             [""], {
               "Ref": "ZStack::StackName"
             },
-            "-Rancher2-Master"
+            "-Rancher2-slave"
           ]]
         },
         "imageUuid": {
@@ -95,7 +101,7 @@
                 "Ref": "cdn"},"\n",
               "    if [ -z $CDN ]; then :; else curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s ", {"Ref": "cdn"},"; fi\n",
               "    systemctl daemon-reload; systemctl enable docker;systemctl restart docker\n",
-              "    docker run -d --restart=unless-stopped -p 80:80 -p 443:443 rancher/rancher\n",
+              "    ", {"Ref": "rancher-cmd"},"\n",
               "\n",
               "runcmd:\n",
               " - echo '", {

@@ -25,11 +25,16 @@
       "Description": "用户ssh公钥",
       "DefaultValue": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC+PmqBvrEdUgN/275alDnmFMC5R9ctsIbED+SsEAu6SQQX8VtzNMa1104hZ3BjDpP16SMvo1PVGcHma4MgTDfcNdyiQ3S3j87LtFxRr7UoMxhwy3RgaFzgI3ZVSvTu3XC1xqmkH2Ur69mQta1B3RpwdSX0mSUs5uK65DP7mvJDkCVfLX5hZmt8xuWNrnAvgh+xbBSTvG35OycBk+FiU8HnXnwuVkpxKjfwdSiySZL8SxRrApe5HRO/JyUzgBUn54b+mjoOM+R8GZ1bKNEHNrXTqVzABfR2Ocj0gOJAqZYJi2aTwP3N91yiiucpuxYqu6tYLRCOmi8Cl2TmXA4e5Ejp demo@example.com"
     },
-    "cdn": {
+    "manager-user": {
       "Type": "String",
-      "Label": "Docker镜像加速地址",
-      "Description": "Docker镜像加速地址以加速部署，比如阿里云，默认不加速",
-      "DefaultValue": "https://docker.mirrors.ustc.edu.cn/"
+      "Label": "Tomcat (Host) Manager用户",
+      "Description": "Tomcat (Host) Manager用户名",
+      "DefaultValue": "admin"
+    },
+    "manager-password": {
+      "Type": "String",
+      "Label": "Tomcat (Host) Manager密码",
+      "Description": "Tomcat (Host) Manager密码"
     },
     "instanceOfferingUuid": {
       "Type": "String",
@@ -51,7 +56,7 @@
             [""], {
               "Ref": "ZStack::StackName"
             },
-            "-Rancher2-Master"
+            "-tomcat"
           ]]
         },
         "imageUuid": {
@@ -89,13 +94,13 @@
               "    #yum-config-manager --add-repo http://mirrors.aliyun.com/repo/Centos-7.repo\n",
               "    curl https://lug.ustc.edu.cn/wiki/_export/code/mirrors/help/centos?codeblock=3 -o /etc/yum.repos.d/ustc.repo\n",
               "    yum-config-manager --enable base,updates,extras\n",
-              "    yum localinstall -y https://mirrors.ustc.edu.cn/docker-ce/linux/centos/7/x86_64/stable/Packages/docker-ce-selinux-17.03.2.ce-1.el7.centos.noarch.rpm\n",
-              "    yum localinstall -y https://mirrors.ustc.edu.cn/docker-ce/linux/centos/7/x86_64/stable/Packages/docker-ce-17.03.2.ce-1.el7.centos.x86_64.rpm\n",
-              "    CDN=", {
-                "Ref": "cdn"},"\n",
-              "    if [ -z $CDN ]; then :; else curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s ", {"Ref": "cdn"},"; fi\n",
-              "    systemctl daemon-reload; systemctl enable docker;systemctl restart docker\n",
-              "    docker run -d --restart=unless-stopped -p 80:80 -p 443:443 rancher/rancher\n",
+              "    yum install -y tomcat tomcat-admin-webapps\n",
+              "    sed -i '/<\\/tomcat-users>/i <role rolename=\"manager-gui\"/>\\n<role rolename=\"admin-gui\"/>\\n<user username=\"", {
+                "Ref": "manager-user"
+              }, "\" password=\"", {
+                "Ref": "manager-password"
+              }, "\" roles=\"manager-gui,admin-gui\"/>' /usr/share/tomcat/conf/tomcat-users.xml\n",
+              "    systemctl enable tomcat;systemctl restart tomcat\n",
               "\n",
               "runcmd:\n",
               " - echo '", {

@@ -51,7 +51,7 @@
             [""], {
               "Ref": "ZStack::StackName"
             },
-            "-Rancher2-Master"
+            "-NextCloud"
           ]]
         },
         "imageUuid": {
@@ -95,7 +95,7 @@
                 "Ref": "cdn"},"\n",
               "    if [ -z $CDN ]; then :; else curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s ", {"Ref": "cdn"},"; fi\n",
               "    systemctl daemon-reload; systemctl enable docker;systemctl restart docker\n",
-              "    docker run -d --restart=unless-stopped -p 80:80 -p 443:443 rancher/rancher\n",
+              "    docker run -d --restart=unless-stopped -p 80:80 nextcloud:fpm\n",
               "\n",
               "runcmd:\n",
               " - echo '", {

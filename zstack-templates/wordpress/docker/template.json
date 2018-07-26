@@ -31,6 +31,12 @@
       "Description": "Docker镜像加速地址以加速部署，比如阿里云，默认不加速",
       "DefaultValue": "https://docker.mirrors.ustc.edu.cn/"
     },
+    "user-dir": {
+      "Type": "String",
+      "Label": "数据存储目录",
+      "Description": "NextCloud用户数据保存目录",
+      "DefaultValue": "/data"
+    },
     "instanceOfferingUuid": {
       "Type": "String",
       "Label": "计算规格",
@@ -51,7 +57,7 @@
             [""], {
               "Ref": "ZStack::StackName"
             },
-            "-Rancher2-Master"
+            "-NextCloud"
           ]]
         },
         "imageUuid": {
@@ -95,7 +101,7 @@
                 "Ref": "cdn"},"\n",
               "    if [ -z $CDN ]; then :; else curl -sSL https://get.daocloud.io/daotools/set_mirror.sh | sh -s ", {"Ref": "cdn"},"; fi\n",
               "    systemctl daemon-reload; systemctl enable docker;systemctl restart docker\n",
-              "    docker run -d --restart=unless-stopped -p 80:80 -p 443:443 rancher/rancher\n",
+              "    docker run -d --restart=unless-stopped -v ",{"Ref":"user-dir"},":/var/www/html/ -p 80:80 nextcloud\n",
               "\n",
               "runcmd:\n",
               " - echo '", {

@@ -83,7 +83,7 @@
               "    mysql -uroot -e  \"GRANT REPLICATION SLAVE ON *.* to '", {"Ref":"dbuser"},"'@'%' identified by '", {"Ref":"dbuserpass"},"'\"\n",
               "    mysql -uroot -e  \"GRANT SUPER ON *.* TO ",{"Ref":"dbuser"},"\"\n",
               "runcmd:\n",
-              " - [ bash, /tmp/mysql-setting.sh]",
+              " - [ bash, /tmp/mysql-setting.sh]\n",
               "final_message:\n",
               " The system is finally up, after $UPTIME seconds"
             ]]
@@ -169,7 +169,7 @@
               }, "',master_user='", {"Ref":"dbuser"},"',master_password='", {"Ref":"dbuserpass"},"',master_log_file='${logfile}',master_log_pos=${pos}\"\n",
               "    mysql -uroot -e  \"start slave\"\n",
               "runcmd:\n",
-              " - [ bash, -xe, /tmp/mysql-setting.sh]",
+              " - [ bash, -xe, /tmp/mysql-setting.sh]\n",
               "final_message:\n",
               " The system is finally up, after $UPTIME seconds"
             ]]
